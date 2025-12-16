@@ -1,139 +1,163 @@
-## Projeto de Testes Automatizados da API Books
+# Automação de Testes – API Books (FakeRestAPI)
 
-Este projeto contém testes automatizados para validar a API Books, utilizando Java 17, Maven, JUnit 5 e REST Assured.
-O foco é demonstrar boas práticas de automação, organização por camadas e criação de cenários positivos e negativos.
+## Sobre o Projeto
 
-## Tecnologias Utilizadas
+Este projeto tem como objetivo validar as operações de **CRUD (Create, Read, Update, Delete)** da API pública **FakeRestAPI**, especificamente o endpoint:
 
-- Java 17
 
-- REST Assured (requisições HTTP e validação de respostas)
 
-- JUnit 5 (framework de testes)
 
-- Maven (gerenciamento de dependências)
+A automação foi desenvolvida com foco em:
+- Validação funcional dos endpoints
+- Validação de códigos de status HTTP
+- Validação de contrato (JSON Schema)
+- Identificação de falhas e limitações da API
 
-- Jackson (serialização JSON)
+O projeto foi conduzido com uma abordagem **realista de QA**, considerando o comportamento real da API e evitando testes instáveis (flaky).
 
-- IntelliJ IDEA (IDE utilizada no desenvolvimento)
+---
 
-## Estrutura do Projeto
-```
-src
- └── test
-     └── java
-         ├── base
-         │    └── BaseTest.java
-         ├── factory
-         │    └── BookFactory.java
-         ├── model
-         │    └── Book.java
-         └── tests
-              └── BooksCrudTests.java
+## 🛠️ Tecnologias Utilizadas
 
-```
+- **Java 17**
+- **Rest Assured**
+- **JUnit 5**
+- **Maven**
+- **JSON Schema Validator**
+- **Git / GitHub**
 
-## Descrição das Pastas
+---
 
-### base/BaseTest.java
-Contém:
+## ▶️ Como Rodar os Testes Localmente
 
-- Configuração da URL base
-
-- Configuração do REST Assured
-
-- Headers comuns
-
-- BeforeAll/AfterAll
-
-### factory/BookFactory.java
-Responsável por criar objetos de livro prontos para uso em testes.
-Evita duplicação de código e deixa os cenários mais limpos.
-
-### model/Book.java
-Representa o payload do livro.
-
-### tests/BooksCrudTests.java
-Contém todos os testes automatizados (CRUD e cenários negativos).
-
-## Como Rodar os Testes Localmente
-- Pré-requisitos
-
+### Pré-requisitos
 - Java 17 instalado
-
 - Maven instalado
 
-- IntelliJ IDEA (opcional, mas recomendado)
+### Passo a passo
 
-### Clonar o projeto
-git clone https://github.com/seu-repo-aqui.git
-
-### Instalar dependências
-mvn clean install
-
-### Rodar os testes
+1. Clone o repositório:
+```bash
+https://github.com/gabrielhoffmannhub/Desafio-Tecnico-QA
+```
+2. Acesse o projeto 
+``` bash
+cd Desafio-Tecnico
+```
+3. Execute os testes:
+```bash
 mvn test
-
-
-Ou dentro do IntelliJ, clicando no botão verde ao lado da classe BooksCrudTests.
-
+```
 ## Estratégia de Testes
 
-Os testes foram criados com foco nas seguintes validações:
+### Abordagem
 
-### Testes Positivos (Happy Path)
+Cada endpoint foi testado de forma isolada, evitando dependência entre operações.
 
-- Criar um livro válido
+Não foi utilizado fluxo Create → Read → Update → Delete, pois a API não garante persistência consistente.
 
-- Buscar livro pelo ID
+Foram criados cenários positivos e negativos para cada operação.
 
-- Atualizar um livro existente
+Testes de contrato (JSON Schema) foram aplicados nos endpoints que retornam body.
 
-- Deletar um livro existente
+Quando a API apresentou comportamento inconsistente ou inválido, os testes não foram ajustados para “passar”; as falhas foram registradas e documentadas.
 
-Fluxo completo: criar → buscar → excluir
+### Justificativa
 
-## Testes Negativos (Validações e Erros)
+A FakeRestAPI apresenta limitações conhecidas, como:
 
-Atualizar livro inexistente (esperado: 404)
+- Falta de persistência confiável
+- Retornos inconsistentes de status HTTP
+- Respostas que não seguem padrões de contrato
 
-Deletar livro inexistente (esperado: 404)
+Por isso, a estratégia priorizou confiabilidade dos testes e transparência dos resultados.
 
-Criar livro sem título (esperado: 400)
+---
 
-Criar livro com JSON vazio (esperado: 400)
+## Cenários Testados e Resultados
 
-Criar livro com caracteres especiais inválidos (esperado: 400)
+### CREATE
 
-Criar livro com payload muito grande (esperado: 400)
+| Cenário | Resultado |
+|------|------|
+Criar livro válido | Erro de contrato (JSON Schema não compatível com resposta da API) |
+Criar livro com ID já existente | 200 (correto) |
+Tipo de dado inválido | 400 (correto) |
+Campos vazios | 400 (correto) |
+Campos muito longos | 400 esperado, API não valida |
+Data inválida | 400 (correto) |
+Campo extra não documentado | Erro de contrato (JSON Schema) |
 
-Esses testes garantem que a API responde corretamente tanto em fluxos válidos quanto em fluxos inadequados, cobrindo usabilidade e robustez.
+Observação:  
+As falhas marcadas como erro de contrato ocorreram porque a API retorna:
 
-## Relatório de Bugs / Melhorias Encontradas
+- `excerpt` como `null`
+- `publishDate` fora do padrão ISO 8601 completo  
 
-Durante a automação foram identificadas inconsistências importantes na API:
+Esses problemas não puderam ser resolvidos no teste sem mascarar erros reais da API.
 
-### Problemas detectados
-1. Atualizar livro inexistente retorna 200, mas deveria retornar 404
+---
 
-Impacto: a API não diferencia recurso existente de inexistente.
+### READ
 
-2. Criar livro com caracteres especiais inválidos retorna 200, deveria retornar 400
+| Cenário | Resultado |
+|------|------|
+Buscar todos os livros | 200 (correto) |
+Buscar ID inexistente | 404 (correto) |
+Buscar ID zero | 404 (correto) |
 
-Impacto: falta de validação no backend.
+Observação:  
+O cenário de buscar ID existente foi removido, pois a API não garante persistência nem existência de IDs.
 
-3. Criar payload gigante retorna 200, deveria retornar 400 ou 413
+---
 
-Impacto: ausência de validação de tamanho.
+### UPDATE
 
-4. Criar livro sem título retorna 200, deveria retornar 400
+| Cenário | Resultado |
+|------|------|
+Atualizar livro válido | Erro de contrato (JSON Schema) |
+Atualizar livro inexistente | 200 (incorreto) |
+Atualizar com payload inválido | 400 (correto) |
+Atualizar com ID diferente no body | 200 (incorreto) |
 
-Impacto: API aceita campos obrigatórios vazios.
+Observação:  
+A API não valida:
 
-5. Criar livro com JSON vazio retorna 200
+- Existência do recurso
+- Consistência entre ID do path e ID do body
 
-Impacto: backend não valida o corpo da requisição.
+---
 
-6. Fluxo completo deu 404 na busca, indicando que o livro criado não está persistindo
+### DELETE
 
-Impacto: problema grave de persistência ou endpoint inconsistente.
+| Cenário | Resultado |
+|------|------|
+Excluir livro existente | 200 (correto) |
+Excluir livro inexistente | 200 (incorreto) |
+Excluir livro duas vezes | 200 (incorreto) |
+
+Observação:  
+O endpoint DELETE retorna 200 OK para qualquer ID, mesmo quando o recurso não existe, violando a semântica REST esperada.
+
+---
+
+## Relatório de Bugs e Melhorias
+
+### Bugs Identificados
+
+- API retorna 200 OK ao excluir recursos inexistentes
+- API retorna 200 OK ao atualizar recursos inexistentes
+- API ignora inconsistência entre ID do path e ID do body
+- Campo `excerpt` retorna `null` sem estar documentado como opcional
+- Campo `publishDate` não segue padrão ISO 8601 completo
+- Validação insuficiente para campos muito longos
+- POST pode retornar body vazio ou inconsistências de contrato
+
+### Melhorias Sugeridas
+
+- Padronizar respostas de erro (404, 400)
+- Garantir persistência ou documentar ausência
+- Corrigir contrato dos campos `excerpt` e `publishDate`
+- Validar consistência entre path e payload
+- Ajustar DELETE para retornar 404 quando o recurso não existir
+
